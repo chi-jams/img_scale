@@ -6,6 +6,7 @@ import (
     "fmt"
     "io/ioutil"
     "bytes"
+    "image/color"
     "image/png"
 )
 
@@ -25,6 +26,14 @@ func main() {
     check(err)
 
     img, err := png.Decode(bytes.NewReader(dat))
+    fmt.Println(img.ColorModel())
+
+    bounds := img.Bounds()
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            img.Set(x, y, color.RGBA(255, 0, 0, 255))
+        }
+    }
 
     file, err := os.Create(os.Args[2])
     defer file.Close()
