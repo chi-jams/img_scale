@@ -6,8 +6,9 @@ import (
     "fmt"
     "io/ioutil"
     "bytes"
-    "image/color"
+    "image"
     "image/png"
+    "image/jpeg"
 )
 
 func check(e error) {
@@ -25,13 +26,16 @@ func main() {
     dat, err := ioutil.ReadFile(os.Args[1])
     check(err)
 
-    img, err := png.Decode(bytes.NewReader(dat))
-    fmt.Println(img.ColorModel())
+    img, err := jpeg.Decode(bytes.NewReader(dat))
 
     bounds := img.Bounds()
-    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-        for x := bounds.Min.X; x < bounds.Max.X; x++ {
-            img.Set(x, y, color.RGBA(255, 0, 0, 255))
+    SCALE := 100
+    pixel_width := (bounds.Max.Y - bounds.Min.Y) / SCALE
+
+    out_img := image.NewRGBA(image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y))
+    for i := bounds.Min.X; i < bounds.Max.X; i++ {
+        for j := bounds.Min.Y; j < bounds.Max.Y; j++ {
+            out_img.Set(i, j, img.At(i/pixel_width * pixel_width, j/pixel_width * pixel_width))
         }
     }
 
@@ -41,6 +45,6 @@ func main() {
 
     img_encoder := new(png.Encoder)
     img_encoder.CompressionLevel = png.NoCompression
-    err = img_encoder.Encode(file, img)
+    err = img_encoder.Encode(file, out_img)
     check(err)
 }
