@@ -6,6 +6,7 @@ import (
     "fmt"
     "io/ioutil"
     "bytes"
+    "reflect"
     "image"
     "image/png"
     "image/jpeg"
@@ -29,22 +30,39 @@ func main() {
     img, err := jpeg.Decode(bytes.NewReader(dat))
 
     bounds := img.Bounds()
-    SCALE := 100
-    pixel_width := (bounds.Max.Y - bounds.Min.Y) / SCALE
+    //pixelWidth := 100
 
-    out_img := image.NewRGBA(image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y))
-    for i := bounds.Min.X; i < bounds.Max.X; i++ {
-        for j := bounds.Min.Y; j < bounds.Max.Y; j++ {
-            out_img.Set(i, j, img.At(i/pixel_width * pixel_width, j/pixel_width * pixel_width))
+    fmt.Println(img.At(0,0))
+    fmt.Println(reflect.TypeOf(image.YCbCrToRGB(img.At(0,0))))
+    outImg := image.NewRGBA(image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y))
+    /*
+    for pixelX := bounds.Min.X; pixelX < bounds.Max.X; i+= pixelWidth {
+        for pixelY := bounds.Min.Y; pixelY < bounds.Max.Y; j+= pixelWidth {
+
+            pixelValue := 0
+            for x := pixelX; x - pixelX < pixelWidth; x++ {
+                for y := pixelY; y - pixelY < pixelWidth; y++ {
+                    pixelValue += img.At(x, y)
+                }
+            }
+            pixelValue /= pixelWidth ** 2
+
+            for x := pixelX; x - pixelX < pixelWidth; x++ {
+                for y := pixelY; y - pixelY < pixelWidth; y++ {
+                    outImg.Set(x, y, pixelValue)
+                    outImg.Set(x, y, img.At(i/pixelWidth * pixelWidth, j/pixelWidth * pixelWidth))
+                }
+            }
         }
     }
+    */
 
     file, err := os.Create(os.Args[2])
     defer file.Close()
     check(err)
 
-    img_encoder := new(png.Encoder)
-    img_encoder.CompressionLevel = png.NoCompression
-    err = img_encoder.Encode(file, out_img)
+    imgEncoder := new(png.Encoder)
+    imgEncoder.CompressionLevel = png.NoCompression
+    err = imgEncoder.Encode(file, outImg)
     check(err)
 }
