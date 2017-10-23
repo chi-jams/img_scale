@@ -28,10 +28,10 @@ func main() {
     check(err)
 
     img, err := jpeg.Decode(bytes.NewReader(dat))
+    check(err)
 
     bounds := img.Bounds()
-//    pixelWidth := 100
-
+    //pixelWidth := 100
     outImg := image.NewRGBA(image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y))
     for pixelX := bounds.Min.X; pixelX < bounds.Max.X; pixelX++ {
         for pixelY := bounds.Min.Y; pixelY < bounds.Max.Y; pixelY++ {
@@ -44,6 +44,7 @@ func main() {
             outImg.Set(pixelX, pixelY, pixColor)
         }
     }
+
 /*
     for pixelX := bounds.Min.X; pixelX < bounds.Max.X; i+= pixelWidth {
         for pixelY := bounds.Min.Y; pixelY < bounds.Max.Y; j+= pixelWidth {
