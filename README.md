@@ -1,2 +1,3 @@
-# png_scale
-A small project to experiment with go and provide a faster image pixelator for my i3lock screen.
+# img_scale 
+
+A small project to blur images for an i3lock screen in order to learn some Go.

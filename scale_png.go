@@ -11,22 +11,23 @@ import (
     "image/draw"
     "image/png"
     "image/jpeg"
-    "time"
     "sync"
     "runtime"
 )
 
+// We're just gonna explode if something goes wrong
 func check(e error) {
     if e != nil {
         panic(e)
     }
 }
 
-func pixSquare(img *image.RGBA, pixX, pixY, pixWidth int) {
+// Blurs a square of pixWidth at pixX, piY from rawImg to img
+func pixSquare(img *image.RGBA, pixX, pixY, pixWidth int, rawImg *image.YCbCr) {
     r, g, b := 0, 0, 0
     for x := pixX; x - pixX < pixWidth; x++ {
         for y := pixY; y - pixY < pixWidth; y++ {
-            pr, pg, pb, _ := img.At(x,y).RGBA()
+            pr, pg, pb, _ := rawImg.At(x,y).RGBA()
             r += int(pr)
             g += int(pg)
             b += int(pb)
@@ -39,7 +40,8 @@ func pixSquare(img *image.RGBA, pixX, pixY, pixWidth int) {
     pixColor.B = uint8((b / (pixWidth * pixWidth )) >> 8)
     pixColor.A = 255
 
-    draw.Draw(img, image.Rect(pixX, pixY, pixX + pixWidth, pixY + pixWidth), &image.Uniform{pixColor}, image.ZP, draw.Src)
+    draw.Draw(img, image.Rect(pixX, pixY, pixX + pixWidth, pixY + pixWidth),
+              &image.Uniform{pixColor}, image.ZP, draw.Src)
 }
 
 func main() {
@@ -48,23 +50,14 @@ func main() {
         os.Exit(1)
     }
 
-    start := time.Now()
-
     dat, err := ioutil.ReadFile(os.Args[1])
     check(err)
 
-    fmt.Println("Loading the file took: ", time.Now().Sub(start))
-
-    start = time.Now()
-
-    rawImg, err := jpeg.Decode(bytes.NewReader(dat))
-    img := image.NewRGBA(rawImg.Bounds())
-    draw.Draw(img, img.Bounds(), rawImg, rawImg.Bounds().Min, draw.Src)
+    blep, err := jpeg.Decode(bytes.NewReader(dat))
+    rawImg := blep.(*image.YCbCr)
     check(err)
 
-    fmt.Println("Decoding the file took: ", time.Now().Sub(start))
-
-    start = time.Now()
+    img := image.NewRGBA(rawImg.Bounds())
 
     pixWidth := 25
     bounds := img.Bounds()
@@ -72,22 +65,18 @@ func main() {
     stripHeight := bounds.Max.Y / runtime.NumCPU()
     for startStrip := 0; startStrip < bounds.Max.Y; startStrip += stripHeight {
         wg.Add(1)
-        go func(img *image.RGBA, startStrip, stripHeight, pixWidth int) {
+        go func(img *image.RGBA, startStrip, stripHeight, pixWidth int, rawImg *image.YCbCr) {
             defer wg.Done()
 
             for pixX := bounds.Min.X; pixX < bounds.Max.X; pixX += pixWidth {
                 for pixY := startStrip; pixY < startStrip + stripHeight; pixY += pixWidth {
-                    pixSquare(img, pixX, pixY, pixWidth)
+                    pixSquare(img, pixX, pixY, pixWidth, rawImg)
                 }
             }
-        }(img, startStrip, stripHeight, pixWidth)
+        }(img, startStrip, stripHeight, pixWidth, rawImg)
     }
 
     wg.Wait()
-
-    fmt.Println("Blurring the image took: ", time.Now().Sub(start))
-
-    start = time.Now()
 
     file, err := os.Create(os.Args[2])
     defer file.Close()
@@ -97,6 +86,4 @@ func main() {
     imgEncoder.CompressionLevel = png.NoCompression
     err = imgEncoder.Encode(file, img)
     check(err)
-
-    fmt.Println("Writing the image took: ", time.Now().Sub(start))
 }
