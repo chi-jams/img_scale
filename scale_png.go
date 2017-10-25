@@ -12,6 +12,8 @@ import (
     "image/png"
     "image/jpeg"
     "time"
+    "sync"
+    "runtime"
 )
 
 func check(e error) {
@@ -66,11 +68,22 @@ func main() {
 
     pixWidth := 25
     bounds := img.Bounds()
-    for pixX := bounds.Min.X; pixX < bounds.Max.X; pixX += pixWidth {
-        for pixY := bounds.Min.Y; pixY < bounds.Max.Y; pixY += pixWidth {
-            pixSquare(img, pixX, pixY, pixWidth)
-        }
+    var wg sync.WaitGroup
+    stripHeight := bounds.Max.Y / runtime.NumCPU()
+    for startStrip := 0; startStrip < bounds.Max.Y; startStrip += stripHeight {
+        wg.Add(1)
+        go func(img *image.RGBA, startStrip, stripHeight, pixWidth int) {
+            defer wg.Done()
+
+            for pixX := bounds.Min.X; pixX < bounds.Max.X; pixX += pixWidth {
+                for pixY := startStrip; pixY < startStrip + stripHeight; pixY += pixWidth {
+                    pixSquare(img, pixX, pixY, pixWidth)
+                }
+            }
+        }(img, startStrip, stripHeight, pixWidth)
     }
+
+    wg.Wait()
 
     fmt.Println("Blurring the image took: ", time.Now().Sub(start))
 
