@@ -36,11 +36,7 @@ func blurSquare(img *image.RGBA, pixelX, pixelY, pixelWidth int) {
     pixColor.B = uint8((b / (pixelWidth * pixelWidth )) >> 8)
     pixColor.A = 255
 
-    for x := pixelX; x - pixelX < pixelWidth; x++ {
-        for y := pixelY; y - pixelY < pixelWidth; y++ {
-            img.Set(x, y, pixColor)
-        }
-    }
+    draw.Draw(img, image.Rect(pixelX, pixelY, pixelX + pixelWidth, pixelY + pixelWidth), &image.Uniform{pixColor}, image.ZP, draw.Src)
 }
 
 func main() {
