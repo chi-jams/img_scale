@@ -11,6 +11,7 @@ import (
     "image/draw"
     "image/png"
     "image/jpeg"
+    "time"
 )
 
 func check(e error) {
@@ -19,10 +20,10 @@ func check(e error) {
     }
 }
 
-func blurSquare(img *image.RGBA, pixelX, pixelY, pixelWidth int) {
+func pixSquare(img *image.RGBA, pixX, pixY, pixWidth int) {
     r, g, b := 0, 0, 0
-    for x := pixelX; x - pixelX < pixelWidth; x++ {
-        for y := pixelY; y - pixelY < pixelWidth; y++ {
+    for x := pixX; x - pixX < pixWidth; x++ {
+        for y := pixY; y - pixY < pixWidth; y++ {
             pr, pg, pb, _ := img.At(x,y).RGBA()
             r += int(pr)
             g += int(pg)
@@ -31,12 +32,12 @@ func blurSquare(img *image.RGBA, pixelX, pixelY, pixelWidth int) {
     }
 
     var pixColor color.RGBA
-    pixColor.R = uint8((r / (pixelWidth * pixelWidth )) >> 8)
-    pixColor.G = uint8((g / (pixelWidth * pixelWidth )) >> 8)
-    pixColor.B = uint8((b / (pixelWidth * pixelWidth )) >> 8)
+    pixColor.R = uint8((r / (pixWidth * pixWidth )) >> 8)
+    pixColor.G = uint8((g / (pixWidth * pixWidth )) >> 8)
+    pixColor.B = uint8((b / (pixWidth * pixWidth )) >> 8)
     pixColor.A = 255
 
-    draw.Draw(img, image.Rect(pixelX, pixelY, pixelX + pixelWidth, pixelY + pixelWidth), &image.Uniform{pixColor}, image.ZP, draw.Src)
+    draw.Draw(img, image.Rect(pixX, pixY, pixX + pixWidth, pixY + pixWidth), &image.Uniform{pixColor}, image.ZP, draw.Src)
 }
 
 func main() {
@@ -45,21 +46,35 @@ func main() {
         os.Exit(1)
     }
 
+    start := time.Now()
+
     dat, err := ioutil.ReadFile(os.Args[1])
     check(err)
 
+    fmt.Println("Loading the file took: ", time.Now().Sub(start))
+
+    start = time.Now()
+
     rawImg, err := jpeg.Decode(bytes.NewReader(dat))
-    bounds := rawImg.Bounds()
     img := image.NewRGBA(rawImg.Bounds())
     draw.Draw(img, img.Bounds(), rawImg, rawImg.Bounds().Min, draw.Src)
     check(err)
 
-    pixelWidth := 25
-    for pixelX := bounds.Min.X; pixelX < bounds.Max.X; pixelX+= pixelWidth {
-        for pixelY := bounds.Min.Y; pixelY < bounds.Max.Y; pixelY+= pixelWidth {
-            blurSquare(img, pixelX, pixelY, pixelWidth)
+    fmt.Println("Decoding the file took: ", time.Now().Sub(start))
+
+    start = time.Now()
+
+    pixWidth := 25
+    bounds := img.Bounds()
+    for pixX := bounds.Min.X; pixX < bounds.Max.X; pixX += pixWidth {
+        for pixY := bounds.Min.Y; pixY < bounds.Max.Y; pixY += pixWidth {
+            pixSquare(img, pixX, pixY, pixWidth)
         }
     }
+
+    fmt.Println("Blurring the image took: ", time.Now().Sub(start))
+
+    start = time.Now()
 
     file, err := os.Create(os.Args[2])
     defer file.Close()
@@ -69,4 +84,6 @@ func main() {
     imgEncoder.CompressionLevel = png.NoCompression
     err = imgEncoder.Encode(file, img)
     check(err)
+
+    fmt.Println("Writing the image took: ", time.Now().Sub(start))
 }
