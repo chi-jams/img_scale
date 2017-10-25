@@ -57,7 +57,7 @@ func main() {
     pixelWidth := 25
     for pixelX := bounds.Min.X; pixelX < bounds.Max.X; pixelX+= pixelWidth {
         for pixelY := bounds.Min.Y; pixelY < bounds.Max.Y; pixelY+= pixelWidth {
-            go blurSquare(img, pixelX, pixelY, pixelWidth)
+            blurSquare(img, pixelX, pixelY, pixelWidth)
         }
     }
 
