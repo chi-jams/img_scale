@@ -8,6 +8,7 @@ import (
     "bytes"
     "image"
     "image/color"
+    "image/draw"
     "image/png"
     "image/jpeg"
 )
@@ -18,11 +19,29 @@ func check(e error) {
     }
 }
 
-/*
-func blurSegment(seg image.Image) image.Image {
-    return seg
+func blurSquare(img *image.RGBA, pixelX, pixelY, pixelWidth int) {
+    r, g, b := 0, 0, 0
+    for x := pixelX; x - pixelX < pixelWidth; x++ {
+        for y := pixelY; y - pixelY < pixelWidth; y++ {
+            pr, pg, pb, _ := img.At(x,y).RGBA()
+            r += int(pr)
+            g += int(pg)
+            b += int(pb)
+        }
+    }
+
+    var pixColor color.RGBA
+    pixColor.R = uint8((r / (pixelWidth * pixelWidth )) >> 8)
+    pixColor.G = uint8((g / (pixelWidth * pixelWidth )) >> 8)
+    pixColor.B = uint8((b / (pixelWidth * pixelWidth )) >> 8)
+    pixColor.A = 255
+
+    for x := pixelX; x - pixelX < pixelWidth; x++ {
+        for y := pixelY; y - pixelY < pixelWidth; y++ {
+            img.Set(x, y, pixColor)
+        }
+    }
 }
-*/
 
 func main() {
     if len(os.Args) != 3 {
@@ -33,44 +52,16 @@ func main() {
     dat, err := ioutil.ReadFile(os.Args[1])
     check(err)
 
-    img, err := jpeg.Decode(bytes.NewReader(dat))
+    rawImg, err := jpeg.Decode(bytes.NewReader(dat))
+    bounds := rawImg.Bounds()
+    img := image.NewRGBA(rawImg.Bounds())
+    draw.Draw(img, img.Bounds(), rawImg, rawImg.Bounds().Min, draw.Src)
     check(err)
 
-    bounds := img.Bounds()
     pixelWidth := 25
-
-    outImg := image.NewRGBA(image.Rect(bounds.Min.X, bounds.Min.Y, bounds.Max.X, bounds.Max.Y))
     for pixelX := bounds.Min.X; pixelX < bounds.Max.X; pixelX+= pixelWidth {
         for pixelY := bounds.Min.Y; pixelY < bounds.Max.Y; pixelY+= pixelWidth {
-
-/*
-            blurSegment(img.SubImage(image.Rectangle(pixelX, pixelY,
-                                                     pixelX + pixelWidth,
-                                                     pixelY + pixelWidth)))
-*/
-
-            r, g, b := 0, 0, 0
-            for x := pixelX; x - pixelX < pixelWidth; x++ {
-                for y := pixelY; y - pixelY < pixelWidth; y++ {
-                    pr, pg, pb, _ := img.At(x,y).RGBA()
-                    r += int(pr)
-                    g += int(pg)
-                    b += int(pb)
-                    outImg.Set(x, y, img.At(x, y))
-                }
-            }
-
-            var pixColor color.RGBA
-            pixColor.R = uint8((r / (pixelWidth * pixelWidth )) >> 8)
-            pixColor.G = uint8((g / (pixelWidth * pixelWidth )) >> 8)
-            pixColor.B = uint8((b / (pixelWidth * pixelWidth )) >> 8)
-            pixColor.A = 255
-
-            for x := pixelX; x - pixelX < pixelWidth; x++ {
-                for y := pixelY; y - pixelY < pixelWidth; y++ {
-                    outImg.Set(x, y, pixColor)
-                }
-            }
+            go blurSquare(img, pixelX, pixelY, pixelWidth)
         }
     }
 
@@ -80,6 +71,6 @@ func main() {
 
     imgEncoder := new(png.Encoder)
     imgEncoder.CompressionLevel = png.NoCompression
-    err = imgEncoder.Encode(file, outImg)
+    err = imgEncoder.Encode(file, img)
     check(err)
 }
