@@ -3,3 +3,4 @@ img_scale
 *.png
 *.jpeg
 *.sh
+**/target/*
