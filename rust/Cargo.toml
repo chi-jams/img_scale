@@ -5,3 +5,6 @@ authors = ["daichij <djameson@mines.edu>"]
 
 [dependencies]
 image = "*"
+
+#[profile.dev]
+#opt-level = 3
