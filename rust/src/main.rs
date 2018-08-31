@@ -2,9 +2,10 @@
 extern crate image;
 
 use std::{env, process};
-use image::GenericImage;
+use std::fs::File;
+use image::{png, GenericImage, ColorType};
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 3 {
@@ -14,14 +15,10 @@ fn main() {
 
     let img = image::open(&args[1]).unwrap();
 
-    println!("Image is {:?}", img.dimensions());
+    let buf = File::create(&args[2])?;
+    let out_img = png::PNGEncoder::new(buf);
+    let (img_width, img_height) = img.dimensions();
+    out_img.encode(&(img.raw_pixels()), img_width, img_height, ColorType::RGB(8))?;
 
-    /*
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    println!("{}", contents);
-
-    let mut out_file = File::create(&args[2])?;
-    out_file.write_all(&contents.into_bytes())?;
-    */
+    Ok(())
 }
