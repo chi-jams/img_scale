@@ -5,6 +5,7 @@ authors = ["daichij <djameson@mines.edu>"]
 
 [dependencies]
 image = "*"
+time = "*"
 
-#[profile.dev]
-#opt-level = 3
+[profile.dev]
+opt-level = 3

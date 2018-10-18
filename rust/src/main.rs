@@ -1,9 +1,11 @@
 
 extern crate image;
+extern crate time;
 
 use std::{env, process};
 use std::fs::File;
-use image::{png, GenericImage, ColorType};
+use image::{png, GenericImage, ColorType, FilterType};
+use time;
 //use image::{jpeg, png, GenericImage, ImageDecoder, ColorType};
 
 fn main() -> std::io::Result<()> {
@@ -15,7 +17,9 @@ fn main() -> std::io::Result<()> {
     }
 
     let img = image::open(&args[1]).unwrap();
-
+    let (img_width, img_height) = img.dimensions();
+    let img = img.resize(img_width / 25, img_height / 25, FilterType::Triangle)
+                 .resize(img_width, img_height, FilterType::Nearest);
     /*
     let img = File::open(&args[1])?;
     let img = jpeg::JPEGDecoder::new(img);
@@ -25,7 +29,7 @@ fn main() -> std::io::Result<()> {
 
     let buf = File::create(&args[2])?;
     let out_img = png::PNGEncoder::new(buf);
-    let (img_width, img_height) = img.dimensions();
+    //let (img_width, img_height) = img.dimensions();
     out_img.encode(&(img.raw_pixels()), img_width, img_height, ColorType::RGB(8))?;
 
     Ok(())
